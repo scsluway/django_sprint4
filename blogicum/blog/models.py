@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.urls import reverse
 
 
 MAX_TITLE_LENGTH = 256
@@ -44,10 +45,14 @@ class Location(PublishedModel):
         verbose_name = 'местоположение'
         verbose_name_plural = 'Местоположения'
 
+    def __str__(self):
+        return self.name
+
 
 class Post(PublishedModel):
     title = models.CharField('Заголовок', max_length=MAX_TITLE_LENGTH)
     text = models.TextField('Текст')
+    image = models.ImageField(verbose_name='Картинка у публикации', blank=True)
     pub_date = models.DateTimeField(
         'Дата и время публикации',
         help_text=('Если установить дату и время в будущем —'
@@ -78,5 +83,25 @@ class Post(PublishedModel):
         ordering = ('-pub_date',)
         default_related_name = 'posts'
 
+    def get_absolute_url(self):
+        return reverse('blog:post_detail', kwargs={'post_id': self.pk})
+
     def __str__(self):
         return self.title
+
+
+class Comment(models.Model):
+    post = models.ForeignKey(
+        Post, verbose_name='Пост', on_delete=models.CASCADE
+    )
+    author = models.ForeignKey(
+        User, verbose_name='Автор', on_delete=models.CASCADE
+    )
+    text = models.TextField('Комментарий')
+    created_at = models.DateTimeField('Добавлено', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
+        default_related_name = 'comments'
+        ordering = ('created_at',)
