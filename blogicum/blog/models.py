@@ -105,3 +105,6 @@ class Comment(models.Model):
         verbose_name_plural = 'Комментарии'
         default_related_name = 'comments'
         ordering = ('created_at',)
+
+    def __str__(self):
+        return self.text[:15]
