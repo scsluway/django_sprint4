@@ -18,18 +18,16 @@ class PostsAuthorMixin:
 
 class CommentsAuthorMixin:
     def dispatch(self, request, *args, **kwargs):
+        post_id = self.kwargs.get('post_id')
         comment = get_object_or_404(
             Comment,
-            pk=self.kwargs[self.pk_url_kwarg]
-        )
-        post = get_object_or_404(
-            Post,
-            pk=self.kwargs.get('post_id')
+            pk=self.kwargs[self.pk_url_kwarg],
+            post__id=post_id
         )
         if comment.author != self.request.user:
             return redirect(
                 'blog:post_detail',
-                post_id=post.pk
+                post_id
             )
         return super().dispatch(request, *args, **kwargs)
 

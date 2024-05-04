@@ -5,12 +5,6 @@ from . import views
 app_name = 'blog'
 
 
-urlpatterns = [
-    path('', views.index, name='index'),
-    path('category/<slug:category_slug>/',
-         views.category_posts, name='category_posts'),
-]
-
 post_urls = [
     path('<int:post_id>/', views.post_detail, name='post_detail'),
     path('create/', views.PostCreateView.as_view(), name='create_post'),
@@ -55,7 +49,10 @@ profile_urls = [
 ]
 
 
-urlpatterns += [
+urlpatterns = [
+    path('', views.index, name='index'),
+    path('category/<slug:category_slug>/',
+         views.category_posts, name='category_posts'),
     path('posts/', include(post_urls)),
-    path('profile/', include(profile_urls))
+    path('profile/', include(profile_urls)),
 ]

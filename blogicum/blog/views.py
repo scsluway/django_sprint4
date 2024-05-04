@@ -7,9 +7,10 @@ from django.shortcuts import render, get_object_or_404
 from django.views.generic import CreateView, UpdateView, DeleteView, ListView
 from django.urls import reverse_lazy, reverse
 
-from . import mixins, utils
-from blog.forms import UserForm, CommentForm
-from blog.models import Post, Category, Comment
+from . import mixins
+from .forms import UserForm, CommentForm
+from .models import Post, Category, Comment
+from .utils import query_config, display_config
 from blogicum.settings import NUMBER_OF_POSTS
 
 User = get_user_model()
@@ -19,19 +20,19 @@ def index(request):
     return render(
         request,
         'blog/index.html',
-        {'page_obj': utils.paginate_posts(
+        {'page_obj': display_config.paginate_posts(
             request,
-            utils.filter_posts(filters=True, sorting=True)
+            query_config.filter_posts(filters=True, annotate_on=True)
         )}
     )
 
 
 def post_detail(request, post_id):
-    post = get_object_or_404(utils.filter_posts(), pk=post_id)
+    post = get_object_or_404(query_config.filter_posts(), pk=post_id)
     if request.user != post.author and (
-        not post.is_published
-        or not post.category.is_published
-        or post.pub_date > timezone.now()
+            not post.is_published
+            or not post.category.is_published
+            or post.pub_date > timezone.now()
     ):
         raise Http404
     context = {}
@@ -48,21 +49,25 @@ def category_posts(request, category_slug):
         slug=category_slug,
         is_published=True
     )
-    posts = utils.filter_posts(category.posts, filters=True, sorting=True)
+    posts = query_config.filter_posts(
+        category.posts,
+        filters=True,
+        annotate_on=True
+    )
     return render(
         request,
         'blog/category.html',
         {
             'category': category,
-            'page_obj': utils.paginate_posts(request, posts)
+            'page_obj': display_config.paginate_posts(request, posts)
         }
     )
 
 
 class PostCreateView(
-    mixins.PostSameSettingsMixin,
-    LoginRequiredMixin,
-    CreateView
+        mixins.PostSameSettingsMixin,
+        LoginRequiredMixin,
+        CreateView
 ):
     def form_valid(self, form):
         form.instance.author = self.request.user
@@ -76,17 +81,17 @@ class PostCreateView(
 
 
 class PostUpdateView(
-    mixins.PostSameSettingsMixin,
-    mixins.PostsAuthorMixin,
-    UpdateView
+        mixins.PostSameSettingsMixin,
+        mixins.PostsAuthorMixin,
+        UpdateView
 ):
     pk_url_kwarg = 'post_id'
 
 
 class PostDeleteView(
-    mixins.PostSameSettingsMixin,
-    mixins.PostsAuthorMixin,
-    DeleteView
+        mixins.PostSameSettingsMixin,
+        mixins.PostsAuthorMixin,
+        DeleteView
 ):
     pk_url_kwarg = 'post_id'
     success_url = reverse_lazy('blog:index')
@@ -109,12 +114,12 @@ class ProfileListView(ListView):
             username=self.kwargs[self.slug_url_kwarg]
         )
         if author != self.request.user:
-            return utils.filter_posts(
+            return query_config.filter_posts(
                 author.posts,
                 filters=True,
-                sorting=True
+                annotate_on=True
             )
-        return utils.filter_posts(author.posts, sorting=True)
+        return query_config.filter_posts(author.posts, annotate_on=True)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -161,17 +166,17 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
 
 
 class CommentUpdateView(
-    mixins.CommentSameSettingsMixin,
-    mixins.CommentsAuthorMixin,
-    UpdateView
+        mixins.CommentSameSettingsMixin,
+        mixins.CommentsAuthorMixin,
+        UpdateView
 ):
     pass
 
 
 class CommentDeleteView(
-    mixins.CommentSameSettingsMixin,
-    mixins.CommentsAuthorMixin,
-    DeleteView
+        mixins.CommentSameSettingsMixin,
+        mixins.CommentsAuthorMixin,
+        DeleteView
 ):
     pass
 
